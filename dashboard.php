@@ -7,17 +7,40 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Delete post
+// Handle post deletion
 if (isset($_GET['delete_id'])) {
     $delete_id = (int)$_GET['delete_id'];
+
+    // Optional: Delete related comments first if you have a `comments` table
+    // $stmt = $pdo->prepare("DELETE FROM comments WHERE post_id = ?");
+    // $stmt->execute([$delete_id]);
+
+    // Now delete the post
     $stmt = $pdo->prepare("DELETE FROM posts WHERE id = ?");
     $stmt->execute([$delete_id]);
-    header('Location: dashboard.php');
+
+    header("Location: dashboard.php");
     exit;
 }
 
-// Fetch posts
-$stmt = $pdo->query("SELECT * FROM posts ORDER BY created_at DESC");
+// Pagination and Search
+$limit = 5;
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+$offset = ($page - 1) * $limit;
+
+// Count total matching posts
+$countQuery = $pdo->prepare("SELECT COUNT(*) FROM posts WHERE title LIKE :search OR content LIKE :search");
+$countQuery->execute(['search' => "%$search%"]);
+$totalPosts = $countQuery->fetchColumn();
+$totalPages = max(1, ceil($totalPosts / $limit));
+
+// Fetch paginated posts
+$stmt = $pdo->prepare("SELECT * FROM posts WHERE title LIKE :search OR content LIKE :search ORDER BY created_at DESC LIMIT :offset, :limit");
+$stmt->bindValue(':search', "%$search%", PDO::PARAM_STR);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+$stmt->execute();
 $posts = $stmt->fetchAll();
 ?>
 
@@ -62,6 +85,18 @@ $posts = $stmt->fetchAll();
             background: #218838;
         }
 
+        form.search-form {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        form.search-form input[type="text"] {
+            flex: 1;
+            padding: 8px;
+            margin-right: 10px;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -94,12 +129,41 @@ $posts = $stmt->fetchAll();
             color: #666;
             padding: 20px 0;
         }
+
+        .pagination {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .pagination a {
+            display: inline-block;
+            margin: 0 5px;
+            padding: 6px 12px;
+            text-decoration: none;
+            background: #007bff;
+            color: white;
+            border-radius: 4px;
+        }
+
+        .pagination a.active {
+            background: #0056b3;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Dashboard - Blog Posts</h1>
+
         <a href="create_post.php" class="button">Create New Post</a>
+
+        <!-- Search Form -->
+        <form method="GET" class="search-form">
+            <input type="text" name="search" placeholder="Search posts..." value="<?= htmlspecialchars($search) ?>">
+            <button type="submit" class="button" style="background: #007bff;">Search</button>
+        </form>
+
+        <!-- Posts Table -->
         <table>
             <thead>
                 <tr>
@@ -125,6 +189,13 @@ $posts = $stmt->fetchAll();
                 <?php endif; ?>
             </tbody>
         </table>
+
+        <!-- Pagination -->
+        <div class="pagination">
+            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                <a href="?search=<?= urlencode($search) ?>&page=<?= $i ?>" class="<?= $i == $page ? 'active' : '' ?>"><?= $i ?></a>
+            <?php endfor; ?>
+        </div>
     </div>
 </body>
 </html>

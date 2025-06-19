@@ -1,13 +1,13 @@
 <?php
-$host = "localhost";
-$dbname = "crud_app";
-$user = "root";
-$pass = ""; // default for XAMPP
+$host = 'localhost';
+$dbname = 'crud_app';   // your DB name
+$username = 'root';
+$password = '';         // usually blank in XAMPP
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $user, $pass);
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    die("DB Connection failed: " . $e->getMessage());
+    die("Connection failed: " . $e->getMessage());
 }
 ?>
