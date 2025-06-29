@@ -2,8 +2,15 @@
 session_start();
 require 'config/db.php';
 
+// Redirect if not logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: auth/login.php');
+    exit;
+}
+
+// Role-based access: only 'admin' or 'editor' can access
+if (!in_array($_SESSION['role'], ['admin', 'editor'])) {
+    echo "<h2 style='color:red; text-align:center;'>Access Denied: You are not authorized to create posts.</h2>";
     exit;
 }
 
@@ -12,14 +19,15 @@ $errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = trim($_POST['title']);
     $content = trim($_POST['content']);
-    $user_id = $_SESSION['user_id']; // get current logged-in user ID
+    $user_id = $_SESSION['user_id'];
 
-    if (!$title) {
-        $errors[] = "Title is required";
+    // Server-side validation
+    if (!$title || strlen($title) < 3) {
+        $errors[] = "Title is required and must be at least 3 characters.";
     }
 
-    if (!$content) {
-        $errors[] = "Content is required";
+    if (!$content || strlen($content) < 10) {
+        $errors[] = "Content is required and must be at least 10 characters.";
     }
 
     if (empty($errors)) {
@@ -127,15 +135,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </ul>
         <?php endif; ?>
 
-        <form method="post" action="create_post.php">
+        <form method="post" action="create_post.php" onsubmit="return validateForm()">
             <label for="title">Title</label>
-            <input type="text" name="title" id="title" value="<?= isset($title) ? htmlspecialchars($title) : '' ?>">
+            <input type="text" name="title" id="title" required minlength="3" value="<?= isset($title) ? htmlspecialchars($title) : '' ?>">
 
             <label for="content">Content</label>
-            <textarea name="content" id="content" rows="6"><?= isset($content) ? htmlspecialchars($content) : '' ?></textarea>
+            <textarea name="content" id="content" rows="6" required minlength="10"><?= isset($content) ? htmlspecialchars($content) : '' ?></textarea>
 
             <button type="submit">Create Post</button>
         </form>
     </div>
+
+    <script>
+        function validateForm() {
+            const title = document.getElementById('title').value.trim();
+            const content = document.getElementById('content').value.trim();
+
+            if (title.length < 3) {
+                alert("Title must be at least 3 characters.");
+                return false;
+            }
+
+            if (content.length < 10) {
+                alert("Content must be at least 10 characters.");
+                return false;
+            }
+
+            return true;
+        }
+    </script>
 </body>
 </html>

@@ -49,7 +49,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $content = $post['content'];
 }
 ?>
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -133,27 +132,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Edit Post</h1>
-        <a href="dashboard.php" class="back-button">← Back to Dashboard</a>
+<div class="container">
+    <h1>Edit Post</h1>
+    <a href="dashboard.php" class="back-button">← Back to Dashboard</a>
 
-        <?php if ($errors): ?>
-            <ul class="error-list">
-                <?php foreach ($errors as $error): ?>
-                    <li><?= htmlspecialchars($error) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        <?php endif; ?>
+    <?php if ($errors): ?>
+        <ul class="error-list">
+            <?php foreach ($errors as $error): ?>
+                <li><?= htmlspecialchars($error) ?></li>
+            <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
 
-        <form method="post" action="edit_post.php?id=<?= $id ?>">
-            <label for="title">Title</label>
-            <input type="text" name="title" id="title" value="<?= htmlspecialchars($title) ?>">
+    <form method="post" action="edit_post.php?id=<?= $id ?>">
+        <label for="title">Title</label>
+        <input type="text" name="title" id="title" value="<?= htmlspecialchars($title) ?>">
 
-            <label for="content">Content</label>
-            <textarea name="content" id="content" rows="6"><?= htmlspecialchars($content) ?></textarea>
+        <label for="content">Content</label>
+        <textarea name="content" id="content" rows="6"><?= htmlspecialchars($content) ?></textarea>
 
-            <button type="submit">Update Post</button>
-        </form>
-    </div>
+        <button type="submit">Update Post</button>
+    </form>
+</div>
 </body>
 </html>

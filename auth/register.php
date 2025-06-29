@@ -10,90 +10,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
+    $role = $_POST['role'];
 
+    // Validation
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = "Invalid email address.";
+    } elseif (strlen($fullname) < 3 || strlen($username) < 3) {
+        $error = "Full name and username must be at least 3 characters.";
+    } elseif (!in_array($role, ['admin', 'editor', 'viewer'])) {
+        $error = "Invalid role selected.";
     } elseif ($password !== $confirm_password) {
         $error = "Passwords do not match.";
     } elseif (strlen($password) < 6) {
-        $error = "Password should be at least 6 characters.";
+        $error = "Password must be at least 6 characters.";
     } else {
         $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
         try {
-            $stmt = $pdo->prepare("INSERT INTO users (fullname, email, username, password) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$fullname, $email, $username, $passwordHash]);
-
-            $success = "Registered successfully! <a href='login.php'>Login</a>";
+            $stmt = $pdo->prepare("INSERT INTO users (fullname, email, username, password, role) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$fullname, $email, $username, $passwordHash, $role]);
+            $success = "Registered successfully! <a href='login.php'>Login here</a>";
+            $fullname = $email = $username = '';
         } catch (PDOException $e) {
             if ($e->getCode() == 23000) {
-                $error = "Email or username already exists. Please choose another.";
+                $error = "Email or username already exists.";
             } else {
-                $error = "Database error: " . $e->getMessage(); // Show actual error
+                $error = "Database error: " . $e->getMessage();
             }
         }
     }
 }
 ?>
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>Register</title>
+    <meta charset="UTF-8">
+    <title>User Registration</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(to right, #74ebd5, #ACB6E5);
-            height: 100vh;
+            background: linear-gradient(120deg, #74ebd5, #acb6e5);
             display: flex;
             justify-content: center;
             align-items: center;
+            height: 100vh;
+            margin: 0;
         }
 
         .form-box {
-            background: #fff;
+            background: white;
             padding: 30px;
-            border-radius: 8px;
-            width: 100%;
+            border-radius: 10px;
             max-width: 400px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
         }
 
         h2 {
-            margin-bottom: 20px;
             text-align: center;
             color: #333;
         }
 
-        input[type="text"],
-        input[type="email"],
-        input[type="password"] {
+        .form-box input,
+        .form-box select,
+        .form-box button {
             width: 100%;
-            padding: 12px 10px;
             margin: 10px 0;
+            padding: 12px;
+            font-size: 16px;
             border: 1px solid #ccc;
             border-radius: 6px;
-            font-size: 16px;
-            background: #f9f9f9;
         }
 
-        button {
+        .form-box input:focus,
+        .form-box select:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .form-box button {
             background-color: #007bff;
             color: white;
-            padding: 12px;
             border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            width: 100%;
+            font-weight: bold;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: background 0.3s ease;
         }
 
-        button:hover {
+        .form-box button:hover {
             background-color: #0056b3;
         }
 
@@ -102,19 +110,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 5px;
             margin-bottom: 15px;
             text-align: center;
-            font-weight: bold;
         }
 
         .success {
             background-color: #d4edda;
             color: #155724;
-            border: 1px solid #c3e6cb;
         }
 
         .error {
             background-color: #f8d7da;
             color: #721c24;
-            border: 1px solid #f5c6cb;
         }
 
         a {
@@ -125,26 +130,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         a:hover {
             text-decoration: underline;
         }
+
     </style>
 </head>
 <body>
-<form method="post" class="form-box" novalidate>
-    <h2>Register</h2>
+    <form method="post" class="form-box">
+        <h2>Register</h2>
 
-    <?php if ($success): ?>
-        <div class="success"><?= $success ?></div>
-    <?php endif; ?>
+        <?php if ($success): ?>
+            <div class="success"><?= $success ?></div>
+        <?php endif; ?>
 
-    <?php if ($error): ?>
-        <div class="error"><?= $error ?></div>
-    <?php endif; ?>
+        <?php if ($error): ?>
+            <div class="error"><?= $error ?></div>
+        <?php endif; ?>
 
-    <input type="text" name="fullname" placeholder="Full Name" required value="<?= isset($fullname) ? htmlspecialchars($fullname) : '' ?>" />
-    <input type="email" name="email" placeholder="Email" required value="<?= isset($email) ? htmlspecialchars($email) : '' ?>" />
-    <input type="text" name="username" placeholder="Username" required value="<?= isset($username) ? htmlspecialchars($username) : '' ?>" />
-    <input type="password" name="password" placeholder="Password" required />
-    <input type="password" name="confirm_password" placeholder="Confirm Password" required />
-    <button type="submit">Register</button>
-</form>
+        <input type="text" name="fullname" placeholder="Full Name" required value="<?= htmlspecialchars($fullname ?? '') ?>" />
+        <input type="email" name="email" placeholder="Email" required value="<?= htmlspecialchars($email ?? '') ?>" />
+        <input type="text" name="username" placeholder="Username" required value="<?= htmlspecialchars($username ?? '') ?>" />
+        <input type="password" name="password" placeholder="Password" required />
+        <input type="password" name="confirm_password" placeholder="Confirm Password" required />
+
+        <select name="role" required>
+            <option value="">Select Role</option>
+            <option value="viewer" <?= (isset($role) && $role === 'viewer') ? 'selected' : '' ?>>Viewer</option>
+            <option value="editor" <?= (isset($role) && $role === 'editor') ? 'selected' : '' ?>>Editor</option>
+            <option value="admin" <?= (isset($role) && $role === 'admin') ? 'selected' : '' ?>>Admin</option>
+        </select>
+
+        <button type="submit">Register</button>
+    </form>
 </body>
 </html>

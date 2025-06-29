@@ -5,13 +5,19 @@ require '../config/db.php';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username']);
+    $password = $_POST['password'];
+
     $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
-    $stmt->execute([trim($_POST['username'])]);
+    $stmt->execute([$username]);
     $user = $stmt->fetch();
 
-    if ($user && password_verify($_POST['password'], $user['password'])) {
+    if ($user && password_verify($password, $user['password'])) {
         $_SESSION['user_id'] = $user['id'];
-        header('Location: ../dashboard.php'); // ✅ Redirect to dashboard
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['role'] = $user['role']; // ✅ Important for access control
+
+        header('Location: ../dashboard.php');
         exit;
     } else {
         $error = "Invalid username or password!";
